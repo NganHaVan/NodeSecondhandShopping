@@ -1,0 +1,254 @@
+const User = require("../models/user");
+const bcrypt = require("bcryptjs");
+const authUtils = require("../utils/auth");
+const errorUtils = require("../utils/errors");
+const crypto = require("crypto");
+const Sequelize = require("sequelize");
+const Op = Sequelize.Op;
+const { validationResult } = require("express-validator/check");
+
+exports.getLogin = (req, res, next) => {
+  // NOTE: how to get request header
+  /* console.log({ cookie: req.get("Cookie"), host: req.get("Host") }); */
+
+  // NOTE: You set cookie in Header in postLogin, below is how you get the value of isLoggedIn
+  /* const isLoggedIn = req
+    .get("Cookie")
+    .split(";")[1]
+    .trim()
+    .split("=")[1];
+  req.session.isLoggedIn = isLoggedIn; */
+
+  // console.log({ session: req.session.isAnotherLoggedIn });
+  authUtils.checkIsLoggedIn(req);
+  let message = authUtils.getErrorMessage(req);
+  res.render("auth/login", {
+    path: "/login",
+    pageTitle: "Login",
+    isAuthenticated: false,
+    errorMessage: message
+  });
+};
+
+exports.postLogin = (req, res, next) => {
+  // Set a cookie - reserved name: Set-cookie
+  // res.setHeader("Set-Cookie", "loggedIn=true; Max-Age=3600");
+
+  // NOTE SESSION: When you create a session, an sid is generated
+  // Fake login process.
+  // NOTE SESSION: By setting values in the session, we start to share them across request
+  const { email, password } = req.body;
+  User.findOne({ where: { email } })
+    .then(user => {
+      if (!user) {
+        // NOTE: Flash error message into session
+        req.flash("error", "Invalid email or wrong password!");
+        return req.session.save(err => {
+          res.redirect("/login");
+        });
+      }
+      bcrypt
+        .compare(password, user.get("password"))
+        .then(doMatch => {
+          if (doMatch) {
+            req.session.isLoggedIn = true;
+            req.session.user = user;
+            // NOTE: You must save session here, because session middleware take a little time to save data in db. redirect() is fired independently. It does not wait until session has been stored in db
+            return req.session.save(err => {
+              if (err) {
+                console.log(err);
+              }
+              return res.redirect("/");
+            });
+          } else {
+            req.flash("error", "Invalid email or password.");
+            return req.session.save(err => {
+              res.redirect("/login");
+            });
+          }
+        })
+        .catch(err => {
+          console.log(err);
+          res.redirect("/login");
+        });
+    })
+    .catch(err => errorUtils.handle500Error(err, next));
+};
+
+exports.getSignUp = (req, res, next) => {
+  authUtils.checkIsLoggedIn(req);
+  let message = authUtils.getErrorMessage(req);
+  res.render("auth/signup", {
+    path: "/signup",
+    pageTitle: "Sign up",
+    isAuthenticated: false,
+    errorMessage: message,
+    oldInput: {
+      email: "",
+      password: "",
+      name: "",
+      confirmPassword: ""
+    },
+    validationErrors: []
+  });
+};
+
+exports.postSignup = (req, res, next) => {
+  const { name, email, password, confirmPassword } = req.body;
+  // NOTE: validationResult will take the error form express-validator middleware check
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    console.log({ errors: errors.array() });
+    return res.status(422).render("auth/signup", {
+      path: "/signup",
+      pageTitle: "Sign up",
+      isAuthenticated: false,
+      errorMessage: errors.array()[0].msg,
+      oldInput: { name, email, password, confirmPassword },
+      validationErrors: errors.array()
+    });
+  }
+  bcrypt
+    .hash(password, 12)
+    .then(hashedPassword => {
+      return User.create({ name, email, password: hashedPassword });
+    })
+    .then(user => {
+      User.findByPk(user.get("id")).then(newUser => {
+        req.session.isLoggedIn = true;
+        req.session.user = newUser;
+        // NOTE: You must save session here, because session middleware take a little time to save data in db. redirect() is fired independently. It does not wait until session has been stored in db
+        req.session.save(err => {
+          if (err) {
+            console.log(err);
+          }
+          res.redirect("/");
+        });
+      });
+    })
+    .catch(err => errorUtils.handle500Error(err, next));
+};
+
+exports.getResetPassword = (req, res, next) => {
+  authUtils.checkIsLoggedIn(req);
+  let message = authUtils.getErrorMessage(req);
+  res.render("auth/reset", {
+    path: "/reset-password",
+    pageTitle: "Reset password",
+    errorMessage: message,
+    token: null,
+    email: null
+  });
+};
+
+exports.postResetPassword = (req, res, next) => {
+  const { email } = req.body;
+  crypto.randomBytes(32, (err, buffer) => {
+    if (err) {
+      console.log({ error: err });
+      req.flash(
+        "error",
+        "Sorry, something went wrong. We cannot reset your password. Please try again!"
+      );
+      return req.session.save(err => {
+        res.redirect("/reset-password");
+      });
+    }
+    const token = buffer.toString("hex");
+    User.findOne({ where: { email } })
+      .then(user => {
+        if (!user) {
+          req.flash("error", "No account with that email found.");
+          return req.session.save(err => {
+            res.redirect("/reset-password");
+          });
+        }
+        user.resetToken = token;
+        user.resetTokenExpiration = Date.now() + 3600000;
+        return user.save().then(() => {
+          return res.render("auth/reset", {
+            path: "/reset-password",
+            pageTitle: "Reset password",
+            errorMessage: null,
+            token,
+            email
+          });
+        });
+      })
+      // TODO: Send email
+      .catch(err => errorUtils.handle500Error(err, next));
+  });
+};
+
+exports.postLogout = (req, res, next) => {
+  // Method of express-session
+  req.session.destroy(function(err) {
+    // cannot access session here
+    if (err) {
+      console.log(err);
+    }
+    res.clearCookie("connect.sid");
+    res.redirect("/login");
+  });
+};
+
+exports.getNewPassword = (req, res, next) => {
+  const { token } = req.params;
+  User.findOne({
+    where: {
+      resetToken: token,
+      resetTokenExpiration: {
+        [Op.gt]: Date.now()
+      }
+    }
+  })
+    .then(user => {
+      if (!user) {
+        req.flash("error", "Invalid token or expired token. Please try again");
+        return req.session.save(err => res.redirect("/reset-password"));
+      }
+      return res.render("auth/new-password", {
+        path: "/new-password",
+        pageTitle: "New password",
+        errorMessage: null,
+        userId: user.id.toString(),
+        passwordToken: token
+      });
+    })
+    .catch(err => errorUtils.handle500Error(err, next));
+};
+
+exports.postNewPassword = (req, res, next) => {
+  const { userId, passwordToken, password } = req.body;
+  User.findOne({
+    where: {
+      id: userId,
+      resetToken: passwordToken,
+      resetTokenExpiration: {
+        [Op.gt]: Date.now()
+      }
+    }
+  })
+    .then(user => {
+      if (!user) {
+        req.flash(
+          "error",
+          "User does not exist or your request is no longer valid. Please try again!"
+        );
+        return req.session.save(err => res.redirect("/reset-password"));
+      }
+      return bcrypt.hash(password, 12);
+    })
+    .then(hashedPassword => {
+      return User.update(
+        {
+          password: hashedPassword,
+          resetToken: null,
+          resetTokenExpiration: null
+        },
+        { where: { id: userId } }
+      );
+    })
+    .then(() => res.redirect("/login"))
+    .catch(error => errorUtils.handle500Error(error, next));
+};

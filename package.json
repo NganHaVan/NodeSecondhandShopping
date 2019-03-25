@@ -1,0 +1,40 @@
+{
+  "name": "nodeproject",
+  "version": "1.0.0",
+  "description": "First node project",
+  "main": "server.js",
+  "engines": {
+    "node": "11.2.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js",
+    "start-server": "node server.js",
+    "start:dev": "nodemon server.js",
+    "showInstance": "gcloud sql instances describe janetinstance"
+  },
+  "author": "JanetVan",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "body-parser": "^1.18.3",
+    "compression": "^1.7.3",
+    "connect-flash": "^0.1.1",
+    "connect-session-sequelize": "^6.0.0",
+    "cookie-parser": "^1.4.3",
+    "csurf": "^1.9.0",
+    "dotenv": "^7.0.0",
+    "ejs": "^2.6.1",
+    "express": "^4.16.4",
+    "express-handlebars": "^3.0.0",
+    "express-session": "^1.15.6",
+    "express-validator": "^5.3.1",
+    "helmet": "^3.15.1",
+    "morgan": "^1.9.1",
+    "multer": "^1.4.1",
+    "mysql2": "^1.6.4",
+    "pdfkit": "^0.9.0",
+    "pug": "^2.0.3",
+    "sequelize": "^4.42.0"
+  }
+}

@@ -1,0 +1,10 @@
+node_modules
+/connection
+/.vscode
+/message.txt
+/routes.js
+server.cert
+server.key
+nodemon.json
+app.flexible.yaml
+.env
