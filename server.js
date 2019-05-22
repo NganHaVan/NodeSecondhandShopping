@@ -10,6 +10,7 @@
 // Using express package
 const express = require("express");
 const fs = require("fs");
+const path = require("path");
 const bodyParser = require("body-parser");
 const session = require("express-session");
 const SequelizeStore = require("connect-session-sequelize")(session.Store);
@@ -25,7 +26,14 @@ const shopRoutes = require("./routes/shop");
 const authRoutes = require("./routes/auth");
 const errorController = require("./controllers/error");
 // const db = require("./utils/database");
-require('dotenv').config();
+if (!process.env.NODE_ENV) {
+  const envResult = require("dotenv").config({
+    path: path.join(__dirname, ".env")
+  });
+  if (envResult.error) {
+    throw envResult.error;
+  }
+}
 const sequelize = require("./utils/database");
 const Product = require("./models/product");
 const User = require("./models/user");
@@ -41,7 +49,6 @@ const csrfProtection = csrf();
 /* const privateKey = fs.readFileSync("server.key");
 const certificate = fs.readFileSync("server.cert"); */
 
-const path = require("path");
 const app = express();
 
 app.enable("trust proxy");
@@ -184,6 +191,8 @@ User.hasMany(Order);
 
 Order.belongsToMany(Product, { through: OrderItem });
 // Product.belongsToMany(Order, {through: OrderItem});
+
+console.log({ env: process.env.DATABASE_NAME });
 
 // Sync model with database
 sequelize

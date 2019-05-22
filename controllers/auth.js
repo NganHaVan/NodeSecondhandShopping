@@ -137,7 +137,8 @@ exports.getResetPassword = (req, res, next) => {
     pageTitle: "Reset password",
     errorMessage: message,
     token: null,
-    email: null
+    email: null,
+    env: process.env.NODE_ENV || "development"
   });
 };
 
@@ -171,7 +172,8 @@ exports.postResetPassword = (req, res, next) => {
             pageTitle: "Reset password",
             errorMessage: null,
             token,
-            email
+            email,
+            env: process.env.NODE_ENV || "development"
           });
         });
       })

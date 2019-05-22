@@ -1,21 +1,27 @@
 <%- include('../includes/head.ejs') %>
-    <link rel="stylesheet" href="/css/forms.css">
-    <link rel="stylesheet" href="/css/auth.css">
+<link rel="stylesheet" href="/css/forms.css">
+<link rel="stylesheet" href="/css/auth.css">
 </head>
 
 <body>
-   <%- include('../includes/navigation.ejs') %>
+    <%- include('../includes/navigation.ejs') %>
 
     <main>
         <% if (errorMessage) { %>
-            <div class="user-message user-message--error"><%= errorMessage %></div>
+        <div class="user-message user-message--error"><%= errorMessage %></div>
         <% } %>
         <% if(token) {%>
-            <div class="user-message user-message--info">
-                <h5>Sorry, the developer does not have time to setup sending email. However, in the future, <%= email%> will receive the following link. Please click on it.</h5>
-                <a href="http://localhost:8080/new-password/<%= token%>">http://localhost:8080/new-password/
+        <div class="user-message user-message--info">
+            <h5>Sorry, the developer does not have time to setup sending email. However, in the future, <%= email%> will
+                receive the following link. Please click on it.</h5>
+            {% if(env === 'development') {%}
+            <a href="http://localhost:8080/new-password/<%= token%>">http://localhost:8080/new-password/
                 <%= token%></a>
-            </div>
+            <% } else { %>
+            <a href="https://node-project123.herokuapp.com/new-password/<%= token%>">https://node-project123.herokuapp.com/new-password/
+                <%= token%></a>
+            <% } %>
+        </div>
         <% } %>
         <form class="login-form" action="/reset-password" method="POST">
             <div class="form-control">
@@ -26,4 +32,4 @@
             <button class="btn" type="submit">Reset Password</button>
         </form>
     </main>
-<%- include('../includes/end.ejs') %>
+    <%- include('../includes/end.ejs') %>
