@@ -1,5 +1,5 @@
 const Product = require("../models/product");
-const Cart = require("../models/cart");
+// const Cart = require("../models/cart");
 const path = require("../utils/path");
 const errorUtils = require("../utils/errors");
 const fileUtils = require("../utils/file");
@@ -23,11 +23,6 @@ exports.postAddProduct = (req, res, next) => {
   // console.log(req.body); => {title: 'good'}
   const { title, price, description } = req.body;
   const image = req.file;
-  /* const product = new Product(null, title, imageUrl, description, price);
-  product
-    .save()
-    .then(() => res.redirect("/"))
-    .catch(err => console.log(err)); */
 
   // NOTE: In server.js, you already defined the relationship between Products and Users, Sequelize can now create associated methods with 'get', 'create' + methodName
   // Before
@@ -42,13 +37,15 @@ exports.postAddProduct = (req, res, next) => {
     .catch(err => console.log(err)); */
   if (image) {
     const imageUrl = image.path;
-    return Product.create({
+    const product = new Product({
       title,
-      imageUrl,
       price,
       description,
-      userId: req.session.user.id
-    })
+      imageURL: imageUrl,
+      userId: req.user._id
+    });
+    return product
+      .save()
       .then(() => res.redirect("/"))
       .catch(err => {
         errorUtils.handle500Error(err, next);
@@ -82,7 +79,7 @@ exports.getEditProduct = (req, res, next) => {
     });
   }); */
   // Association method
-  req.user
+  /* req.user
     .getProducts({ where: { id: productId } })
     .then(products => {
       if (products.length === 0) {
@@ -98,18 +95,19 @@ exports.getEditProduct = (req, res, next) => {
     })
     .catch(err => {
       errorUtils.handle500Error(err, next);
-    });
+    }); */
 
-  /* Product.findByPk(productId)
+  Product.findById(productId)
     .then(product => {
       res.render("admin/edit-product", {
         pageTitle: "Product form",
         path: "/admin/add-product",
         editing: editMode,
-        product
+        product,
+        errorMessage: ""
       });
     })
-    .catch(err => console.log(err)); */
+    .catch(err => console.log(err));
 };
 
 exports.postEditProduct = (req, res, next) => {
@@ -124,30 +122,16 @@ exports.postEditProduct = (req, res, next) => {
   );
   editedProduct.save();
   res.redirect("/admin/products"); */
-  if (!image) {
-    return res.status(422).render("admin/edit-product", {
-      pageTitle: "Product form",
-      path: "/admin/add-product",
-      editing: true,
-      product: { title, description, price },
-      errorMessage: "Attached file is not image"
-    });
-  }
-  return Product.findByPk(productId)
-    .then(product => {
-      if (product.userId !== req.user.id) {
-        return res.redirect("/");
+  return Product.findById(productId)
+    .then(prod => {
+      prod.title = title;
+      prod.price = price;
+      prod.description = description;
+      if (image && image.path !== prod.imageURL) {
+        fileUtils.deleteFile(prod.imageURL);
+        prod.imageURL = image.path;
       }
-      fileUtils.deleteFile(product.imageUrl);
-      const imageUrl = image.path;
-      return Product.update(
-        { title, imageUrl, description, price },
-        {
-          where: {
-            id: productId
-          }
-        }
-      );
+      return prod.save();
     })
     .then(() => res.redirect("/admin/products"))
     .catch(err => errorUtils.handle500Error(err, next));
@@ -167,7 +151,7 @@ exports.getProducts = (req, res, next) => {
       path: "/admin/products"
     });
   }); */
-  Product.findAll({ where: { userId: req.user.id } })
+  Product.find()
     .then(products => {
       res.render("admin/products", {
         prods: products,
@@ -185,15 +169,11 @@ exports.deleteProduct = (req, res, next) => {
   );
   Product.removeById(productId);
   res.redirect("/admin/products"); */
-  Product.findByPk(productId)
-    .then(prod => {
-      if (prod.userId !== req.user.id) {
-        return res.redirect("/");
-      }
-      fileUtils.deleteFile(prod.imageUrl);
-      return prod.destroy();
+  Product.findOneAndDelete(productId)
+    .then(removedProd => {
+      fileUtils.deleteFile(removedProd.imageURL);
+      res.redirect("/admin/products");
     })
-    .then(() => res.redirect("/admin/products"))
     .catch(err => {
       errorUtils.handle500Error(err, next);
     });

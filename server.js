@@ -14,7 +14,7 @@ const path = require("path");
 const bodyParser = require("body-parser");
 const session = require("express-session");
 // const SequelizeStore = require("connect-session-sequelize")(session.Store);
-const csrf = require("csurf");
+// const csrf = require("csurf");
 const flash = require("connect-flash");
 const multer = require("multer");
 const helmet = require("helmet");
@@ -22,12 +22,13 @@ const compression = require("compression");
 const morgan = require("morgan");
 const mongoose = require("mongoose");
 
-/* const adminRoutes = require("./routes/admin");
+const adminRoutes = require("./routes/admin");
 const shopRoutes = require("./routes/shop");
-const authRoutes = require("./routes/auth");
-const errorController = require("./controllers/error"); */
+// const authRoutes = require("./routes/auth");
+// const errorController = require("./controllers/error");
 // const db = require("./utils/database");
 const mongoURI = require("./config/database").mongoURI;
+const User = require("./models/user");
 
 const envResult = require("dotenv").config({
   path: path.join(__dirname, ".env")
@@ -38,7 +39,7 @@ if (envResult.error) {
 
 // const store = new SequelizeStore({ db: sequelize });
 
-const csrfProtection = csrf();
+// const csrfProtection = csrf();
 
 /* const privateKey = fs.readFileSync("server.key");
 const certificate = fs.readFileSync("server.cert"); */
@@ -91,26 +92,36 @@ const fileFilter = (req, file, cb) => {
 // NOTE: uploaded images will be saved in the images folder
 app.use(multer({ storage: fileStorage, fileFilter }).single("image"));
 
-/* app.use(
+app.use(
   session({
     secret: "My secret for node project",
     resave: false,
     saveUninitialized: true,
-    store,
     unset: "destroy"
   })
-); */
+);
 
-app.use(csrfProtection);
+// app.use(csrfProtection);
 // NOTE: We can use middleware on the req obj
 app.use(flash());
 
 // res.locals => Create local variable for all views(only)
-/* app.use((req, res, next) => {
-  res.locals.isAuthenticated = req.session.isLoggedIn;
-  res.locals.csrfToken = req.csrfToken();
+app.use((req, res, next) => {
+  res.locals.isAuthenticated = true;
+  // res.locals.csrfToken = req.csrfToken();
   next();
-}); */
+});
+
+app.use((req, res, next) => {
+  User.findById("5d35d11dc2c61018d8e7e2fd")
+    .then(user => {
+      req.user = user;
+      next();
+    })
+    .catch(err => {
+      console.log(err);
+    });
+});
 
 /* app.use((req, res, next) => {
   if (!req.session.user) {
@@ -133,8 +144,8 @@ app.use(flash());
 // NOTE: Middleware runs only when there are any incoming request
 
 // Don't put it under middleware functions (which using app.use()), because it is accessed only when we call next()
-// app.use("/admin", adminRoutes);
-// app.use(shopRoutes);
+app.use("/admin", adminRoutes);
+app.use(shopRoutes);
 // app.use(authRoutes);
 
 // Handle error pages
@@ -170,6 +181,20 @@ mongoose
   .connect(mongoURI)
   .then(res => {
     console.log("Connected to MLab");
+    User.find({ email: "ha@example.com" })
+      .then(user => {
+        if (!user) {
+          const user = new User({
+            name: "Ha Van",
+            email: "ha@example.com",
+            cart: {
+              items: []
+            }
+          });
+          user.save();
+        }
+      })
+      .catch(err => console.log(err));
     app.listen(process.env.PORT || 8080, () => {
       console.log(`Server is running on port ${process.env.PORT || 8080}`);
     });

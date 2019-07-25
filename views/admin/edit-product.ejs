@@ -12,7 +12,8 @@
       <%= errorMessage%>
     </div>
     <% }%>
-    <form class="product-form" action="/admin/<% if(editing) { %>edit-product<% } else{ %>add-product<% } %>" method="POST" enctype="multipart/form-data">
+    <form class="product-form" action="/admin/<% if(editing) { %>edit-product<% } else{ %>add-product<% } %>"
+      method="POST" enctype="multipart/form-data">
       <div class="form-control">
         <label for="title">Title</label>
         <input type="text" name="title" id="title" value="<% if(editing || product) {%><%= product.title %><% } %>">
@@ -21,24 +22,50 @@
         <label for="imageUrl">Image URL</label>
         <input type="text" name="imageUrl" id="imageUrl"value="<% if(editing) {%><%= product.imageUrl %><% } %>">
       </div> -->
+      <% if(editing) { %>
+      <div class="form-control">
+        <div class="card__image">
+          <img src="/<%= product.imageURL %>" alt="<%= product.title %>" id="productImage">
+        </div>
+
+        <div class="input-container">
+          <input type="file" id="image" name="image">
+          <button class="browse-btn">
+            Browse Files
+          </button>
+          <span class="file-info">Upload a file</span>
+        </div>
+
+
+      </div>
+      <% } else { %>
       <div class="form-control">
         <label for="image">Image</label>
-        <input type="file" name="image" id="image">
+        <div class="input-container">
+          <input type="file" id="image" name="image">
+          <button class="browse-btn">
+            Browse Files
+          </button>
+          <span class="file-info">Upload a file</span>
+        </div>
       </div>
+
+      <% } %>
       <div class="form-control">
         <label for="price">Price</label>
-        <input type="number" name="price" id="price" step="0.01" value="<% if(editing || product) {%><%= product.price %><% } %>">
+        <input type="number" name="price" id="price" step="0.01"
+          value="<% if(editing || product) {%><%= product.price %><% } %>">
       </div>
       <div class="form-control">
         <label for="description">Description</label>
-        <textarea name="description" id="description" rows="5"><% if(editing || product) {%><%= product.description %><% } %></textarea>
+        <textarea name="description" id="description"
+          rows="5"><% if(editing || product) {%><%= product.description %><% } %></textarea>
       </div>
 
       <!-- Send product id only when edit. Product id is generated when creating a new one. See Product model for more details -->
       <% if(editing){%>
-        <input type="hidden" name="productId" value="<%= product.id%>">
-        <% } %>
-        <input type="hidden" name="_csrf" value="<%= csrfToken%>">
+      <input type="hidden" name="productId" value="<%= product._id%>">
+      <% } %>
       <button class="btn" type="submit"><% if(editing) { %> Update Product <% } else{ %> Add Product <% } %></button>
     </form>
   </main>
