@@ -14,16 +14,16 @@
     <% }%>
     <form class="product-form" action="/admin/<% if(editing) { %>edit-product<% } else{ %>add-product<% } %>"
       method="POST" enctype="multipart/form-data">
-      <div class="form-control">
+      <div class="form-control-product">
         <label for="title">Title</label>
         <input type="text" name="title" id="title" value="<% if(editing || product) {%><%= product.title %><% } %>">
       </div>
-      <!-- <div class="form-control">
+      <!-- <div class="form-control-product">
         <label for="imageUrl">Image URL</label>
         <input type="text" name="imageUrl" id="imageUrl"value="<% if(editing) {%><%= product.imageUrl %><% } %>">
       </div> -->
       <% if(editing) { %>
-      <div class="form-control">
+      <div class="form-control-product">
         <div class="card__image">
           <img src="/<%= product.imageURL %>" alt="<%= product.title %>" id="productImage">
         </div>
@@ -39,7 +39,7 @@
 
       </div>
       <% } else { %>
-      <div class="form-control">
+      <div class="form-control-product">
         <label for="image">Image</label>
         <div class="input-container">
           <input type="file" id="image" name="image">
@@ -51,12 +51,12 @@
       </div>
 
       <% } %>
-      <div class="form-control">
+      <div class="form-control-product">
         <label for="price">Price</label>
         <input type="number" name="price" id="price" step="0.01"
           value="<% if(editing || product) {%><%= product.price %><% } %>">
       </div>
-      <div class="form-control">
+      <div class="form-control-product">
         <label for="description">Description</label>
         <textarea name="description" id="description"
           rows="5"><% if(editing || product) {%><%= product.description %><% } %></textarea>

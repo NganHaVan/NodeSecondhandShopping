@@ -13,22 +13,22 @@
         </div>
         <% }%>
         <form class="login-form" action="/signup" method="POST" novalidate>
-            <div class="form-control">
+            <div class="form-control-product">
                 <label for="name">Name</label>
                 <input type="name" name="name" id="name" value="<%= oldInput.name %>">
             </div>
-            <div class="form-control">
+            <div class="form-control-product">
                 <label for="email">E-Mail</label>
                 <input class="<%= validationErrors.find(e => e.param === 'email') ? 'invalid' : '' %>" type="email"
                     name="email" id="email" value="<%= oldInput.email %>">
             </div>
-            <div class="form-control">
+            <div class="form-control-product">
                 <label for="password">Password</label>
                 <input class="
                 <%= validationErrors.find(e => e.param === 'password') ? 'invalid' : '' %>" type="password"
                     name="password" id="password" value="<%= oldInput.password %>">
             </div>
-            <div class="form-control">
+            <div class="form-control-product">
                 <label for="confirmPassword">Confirm Password</label>
                 <input class="
                 <%= validationErrors.find(e => e.param === 'confirmPassword') ? 'invalid' : '' %>" type="password"

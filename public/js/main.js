@@ -49,7 +49,7 @@ realInput.addEventListener("change", () => {
     productImage.setAttribute("id", "productImage");
     productImage.setAttribute("width", 320);
     productImage.setAttribute("height", 240);
-    let form = document.getElementsByClassName("form-control");
+    let form = document.getElementsByClassName("form-control-product");
     form[1].insertBefore(productImage, form[1].children[1]);
   }
   previewFile();
