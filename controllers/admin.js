@@ -151,11 +151,11 @@ exports.getProducts = (req, res, next) => {
       path: "/admin/products"
     });
   }); */
-  Product.find()
+  Product.find({ userId: req.user._id })
     .then(products => {
       res.render("admin/products", {
         prods: products,
-        pageTitle: "Admin product",
+        pageTitle: "Your product",
         path: "/admin/products"
       });
     })

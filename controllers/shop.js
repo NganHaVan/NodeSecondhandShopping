@@ -128,34 +128,6 @@ exports.getIndex = (req, res, next) => {
 };
 
 exports.getCart = (req, res, next) => {
-  // Manual
-  /* Cart.getCart(({ products, totalPrice }) => {
-    Product.fetchAll(prods => {
-      let cartList = [];
-      for (prod of prods) {
-        let foundProduct = products.find(product => product.id === prod.id);
-        if (foundProduct) {
-          cartList = [...cartList, { ...prod, qty: foundProduct.qty }];
-        }
-      }
-        products: cartList,
-        totalPrice
-      });
-    });
-  }); */
-  /* User.findByPk(req.session.user.id)
-    .then(user => user.getCart())
-        .getProducts()
-        .then(products => {
-            pageTitle: "Your Cart",
-            products: products,
-            isAuthenticated: req.session.isLoggedIn
-          });
-        })
-        .catch(err => console.log(err));
-    })
-    .catch(err => console.log(err)); */
-
   req.user
     .populate("cart.items.productId")
     .execPopulate()
@@ -172,53 +144,15 @@ exports.getCart = (req, res, next) => {
 
 // NOTE: req.body is captured by the name - value attributes from input tag in HTML
 exports.postCart = (req, res, next) => {
-  // Check name attributes in product-detail.ejs
-  /* const prodId = req.body.productId;
-  const product = Product.findById(prodId, prod => {
-    Cart.addCart(prodId, prod.price);
-  });
-
   const prodId = req.body.productId;
   Product.findById(prodId)
     .then(prod => {
       return req.user.addToCart(prod);
     })
     .then(result => {
-    });
-  /* let fetchedCart;
-  let newQuantity = 1;
-  let sessionUser;
-  User.findByPk(req.session.user.id)
-    .then(user => {
-      sessionUser = user;
-      return user.getCart();
+      res.redirect("/cart");
     })
-        return sessionUser.createCart();
-      }
-    })
-    })
-    .then(products => {
-      let product;
-      if (products.length > 0) {
-        product = products[0];
-      }
-
-      if (product) {
-        const oldQuantity = product.cartItem.quantity;
-        newQuantity = oldQuantity + 1;
-        return product;
-      }
-      return Product.findByPk(prodId);
-    })
-    .then(product => {
-      // addProduct also create and update if product does not exist
-      return fetchedCart.addProduct(product, {
-        through: { quantity: newQuantity }
-      });
-    })
-    .then(() => {
-    })
-    .catch(err => errorUtils.handle500Error(err, next)); */
+    .catch(err => errorUtils.handle500Error(err, next));
 };
 
 exports.deleteCart = (req, res, next) => {
@@ -318,7 +252,7 @@ exports.getInvoice = async (req, res, next) => {
   //     pdfDoc.end(); */
   //   });
   try {
-    const order = await Order.findByPk(orderId);
+    const order = await Order.findById(orderId);
     if (!order) {
       throw new Error("No orders found.");
     }

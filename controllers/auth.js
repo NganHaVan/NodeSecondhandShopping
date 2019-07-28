@@ -38,7 +38,7 @@ exports.postLogin = (req, res, next) => {
   // Fake login process.
   // NOTE SESSION: By setting values in the session, we start to share them across request
   const { email, password } = req.body;
-  User.findOne({ where: { email } })
+  User.findOne({ email })
     .then(user => {
       if (!user) {
         // NOTE: Flash error message into session
@@ -48,7 +48,7 @@ exports.postLogin = (req, res, next) => {
         });
       }
       bcrypt
-        .compare(password, user.get("password"))
+        .compare(password, user.password)
         .then(doMatch => {
           if (doMatch) {
             req.session.isLoggedIn = true;
@@ -111,10 +111,16 @@ exports.postSignup = (req, res, next) => {
   bcrypt
     .hash(password, 12)
     .then(hashedPassword => {
-      return User.create({ name, email, password: hashedPassword });
+      let newUser = new User({
+        name,
+        email,
+        password: hashedPassword,
+        cart: { items: [] }
+      });
+      return newUser.save();
     })
     .then(user => {
-      User.findByPk(user.get("id")).then(newUser => {
+      User.findById(user._id).then(newUser => {
         req.session.isLoggedIn = true;
         req.session.user = newUser;
         // NOTE: You must save session here, because session middleware take a little time to save data in db. redirect() is fired independently. It does not wait until session has been stored in db
@@ -156,25 +162,28 @@ exports.postResetPassword = (req, res, next) => {
       });
     }
     const token = buffer.toString("hex");
-    User.findOne({ where: { email } })
+    User.findOne({ email })
       .then(user => {
+        console.log({ user });
         if (!user) {
           req.flash("error", "No account with that email found.");
-          return req.session.save(err => {
+          /* return req.session.save(err => {
             res.redirect("/reset-password");
-          });
+          }); */
+          return res.redirect("/reset-password");
         }
         user.resetToken = token;
         user.resetTokenExpiration = Date.now() + 3600000;
-        return user.save().then(() => {
-          return res.render("auth/reset", {
-            path: "/reset-password",
-            pageTitle: "Reset password",
-            errorMessage: null,
-            token,
-            email,
-            env: process.env.NODE_ENV || "development"
-          });
+        return user.save();
+      })
+      .then(() => {
+        return res.render("auth/reset", {
+          path: "/reset-password",
+          pageTitle: "Reset password",
+          errorMessage: null,
+          token,
+          email,
+          env: process.env.NODE_ENV || "development"
         });
       })
       // TODO: Send email

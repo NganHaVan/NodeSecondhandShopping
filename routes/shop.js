@@ -14,17 +14,17 @@ router.get("/products", shopController.getProducts);
 // NOTE: The route below is dynamic when it relates to query or params. That's why when you have a static/ specific route(i.e, /products/delete) and dynamic route, you should write specific route before the dynamic one, otherwise, it will never be reached
 router.get("/products/:productId", shopController.getProduct);
 
-router.get("/cart", shopController.getCart);
+router.get("/cart", isAuth, shopController.getCart);
 
-router.post("/cart", shopController.postCart);
+router.post("/cart", isAuth, shopController.postCart);
 
-router.post("/cart-delete-item", shopController.deleteCart);
+router.post("/cart-delete-item", isAuth, shopController.deleteCart);
 
-router.get("/orders", shopController.getOrders);
+router.get("/orders", isAuth, shopController.getOrders);
 
 // router.get("/orders/:orderId", isAuth, shopController.getInvoice);
 
-router.post("/create-order", shopController.postOrder);
+router.post("/create-order", isAuth, shopController.postOrder);
 
 // router.get("/checkout", isAuth, shopController.getCheckout);
 

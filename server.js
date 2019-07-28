@@ -15,6 +15,7 @@ const bodyParser = require("body-parser");
 const session = require("express-session");
 // const SequelizeStore = require("connect-session-sequelize")(session.Store);
 // const csrf = require("csurf");
+const MongoDBStore = require("connect-mongodb-session")(session);
 const flash = require("connect-flash");
 const multer = require("multer");
 const helmet = require("helmet");
@@ -24,9 +25,8 @@ const mongoose = require("mongoose");
 
 const adminRoutes = require("./routes/admin");
 const shopRoutes = require("./routes/shop");
-// const authRoutes = require("./routes/auth");
-// const errorController = require("./controllers/error");
-// const db = require("./utils/database");
+const authRoutes = require("./routes/auth");
+const errorController = require("./controllers/error");
 const mongoURI = require("./config/database").mongoURI;
 const User = require("./models/user");
 
@@ -45,6 +45,11 @@ if (envResult.error) {
 const certificate = fs.readFileSync("server.cert"); */
 
 const app = express();
+// TODO: Setup mongoUI for production
+const store = new MongoDBStore({
+  uri: mongoURI,
+  collection: "sessions"
+});
 
 app.enable("trust proxy");
 
@@ -97,7 +102,8 @@ app.use(
     secret: "My secret for node project",
     resave: false,
     saveUninitialized: true,
-    unset: "destroy"
+    unset: "destroy",
+    store
   })
 );
 
@@ -107,27 +113,16 @@ app.use(flash());
 
 // res.locals => Create local variable for all views(only)
 app.use((req, res, next) => {
-  res.locals.isAuthenticated = true;
+  res.locals.isAuthenticated = req.session.isLoggedIn;
   // res.locals.csrfToken = req.csrfToken();
   next();
 });
 
 app.use((req, res, next) => {
-  User.findById("5d35d11dc2c61018d8e7e2fd")
-    .then(user => {
-      req.user = user;
-      next();
-    })
-    .catch(err => {
-      console.log(err);
-    });
-});
-
-/* app.use((req, res, next) => {
   if (!req.session.user) {
     next();
   } else {
-    User.findByPk(req.session.user.id)
+    User.findById(req.session.user._id)
       .then(user => {
         if (!user) {
           return next();
@@ -139,14 +134,14 @@ app.use((req, res, next) => {
         next(new Error(error));
       });
   }
-}); */
+});
 
 // NOTE: Middleware runs only when there are any incoming request
 
 // Don't put it under middleware functions (which using app.use()), because it is accessed only when we call next()
 app.use("/admin", adminRoutes);
 app.use(shopRoutes);
-// app.use(authRoutes);
+app.use(authRoutes);
 
 // Handle error pages
 // app.get("/500", errorController.get500);

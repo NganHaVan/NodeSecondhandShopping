@@ -22,7 +22,7 @@ router.post(
       .trim()
       // NOTE: express validator will check if custom return true or false, return throw error or to return a promise (in this case, express validator will wait until it is fulfilled)
       .custom((value, { req }) => {
-        return User.findOne({ where: { email: value } }).then(user => {
+        return User.findOne({ email: value }).then(user => {
           if (user) {
             return Promise.reject("Email exists already. You can login now");
           }
