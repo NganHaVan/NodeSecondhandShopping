@@ -16,7 +16,8 @@ exports.getAddProduct = (req, res, next) => {
     editing: false,
     product: undefined,
     errorMessage: "",
-    csrfToken: res.locals.csrfToken
+    csrfToken: res.locals.csrfToken,
+    user: req.user.name
   });
 };
 
@@ -107,7 +108,8 @@ exports.getEditProduct = (req, res, next) => {
         editing: editMode,
         product,
         errorMessage: "",
-        csrfToken: res.locals.csrfToken
+        csrfToken: res.locals.csrfToken,
+        user: req.user.name
       });
     })
     .catch(err => console.log(err));
@@ -127,6 +129,9 @@ exports.postEditProduct = (req, res, next) => {
   res.redirect("/admin/products"); */
   return Product.findById(productId)
     .then(prod => {
+      if (prod.userId.toString() !== req.user._id) {
+        return res.redirect("/");
+      }
       prod.title = title;
       prod.price = price;
       prod.description = description;
@@ -159,7 +164,8 @@ exports.getProducts = (req, res, next) => {
       res.render("admin/products", {
         prods: products,
         pageTitle: "Your product",
-        path: "/admin/products"
+        path: "/admin/products",
+        user: req.user.name
       });
     })
     .catch(err => errorUtils.handle500Error(err, next));
@@ -172,7 +178,7 @@ exports.deleteProduct = (req, res, next) => {
   );
   Product.removeById(productId);
   res.redirect("/admin/products"); */
-  Product.findOneAndDelete(productId)
+  Product.deleteOne({ _id: productId, userId: req.user._id })
     .then(removedProd => {
       fileUtils.deleteFile(removedProd.imageURL);
       res.redirect("/admin/products");

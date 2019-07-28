@@ -54,6 +54,7 @@ form {
   margin: 0;
   padding: 0;
   display: flex;
+  align-items: center;
 }
 
 .main-header__item {
@@ -62,13 +63,21 @@ form {
 }
 
 .main-header__item a,
-.main-header__item button {
+.main-header__item button,
+.main-header__item p {
   font: inherit;
   background: transparent;
   border: none;
   text-decoration: none;
   color: white;
   cursor: pointer;
+  align-self: center;
+  vertical-align: center;
+}
+
+.welcome {
+  cursor: default !important;
+  margin-top: 20px;
 }
 
 .main-header__item a:hover,

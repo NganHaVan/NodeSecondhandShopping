@@ -167,9 +167,8 @@ exports.postResetPassword = (req, res, next) => {
     const token = buffer.toString("hex");
     User.findOne({ email })
       .then(user => {
-        console.log({ user });
         if (!user) {
-          req.flash("error", "No account with that email found.");
+          req.flash("error", "No account found with that email.");
           /* return req.session.save(err => {
             res.redirect("/reset-password");
           }); */
@@ -211,7 +210,7 @@ exports.getNewPassword = (req, res, next) => {
   User.findOne({
     resetToken: token,
     resetTokenExpiration: {
-      [Op.gt]: Date.now()
+      $gt: Date.now()
     }
   })
     .then(user => {
@@ -223,7 +222,7 @@ exports.getNewPassword = (req, res, next) => {
         path: "/new-password",
         pageTitle: "New password",
         errorMessage: null,
-        userId: user.id.toString(),
+        userId: user._id.toString(),
         passwordToken: token,
         csrfToken: res.locals.csrfToken
       });
@@ -233,11 +232,12 @@ exports.getNewPassword = (req, res, next) => {
 
 exports.postNewPassword = (req, res, next) => {
   const { userId, passwordToken, password } = req.body;
+  let resetUser;
   User.findOne({
     _id: userId,
     resetToken: passwordToken,
     resetTokenExpiration: {
-      [Op.gt]: Date.now()
+      $gt: Date.now()
     }
   })
     .then(user => {
@@ -248,17 +248,14 @@ exports.postNewPassword = (req, res, next) => {
         );
         return req.session.save(err => res.redirect("/reset-password"));
       }
+      resetUser = user;
       return bcrypt.hash(password, 12);
     })
     .then(hashedPassword => {
-      return User.update(
-        {
-          password: hashedPassword,
-          resetToken: null,
-          resetTokenExpiration: null
-        },
-        { where: { id: userId } }
-      );
+      resetUser.password = hashedPassword;
+      resetUser.resetToken = undefined;
+      resetUser.resetTokenExpiration = undefined;
+      return resetUser.save();
     })
     .then(() => res.redirect("/login"))
     .catch(error => errorUtils.handle500Error(error, next));

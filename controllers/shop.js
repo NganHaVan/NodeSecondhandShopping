@@ -17,7 +17,8 @@ exports.getProducts = (req, res, next) => {
         prods: products,
         pageTitle: "All Products",
         path: "/products",
-        csrfToken: res.locals.csrfToken
+        csrfToken: res.locals.csrfToken,
+        user: req.user.name
       });
     })
     .catch(err => errorUtils.handle500Error(err, next));
@@ -48,7 +49,8 @@ exports.getProduct = (req, res, next) => {
         pageTitle: product.title,
         // Path in navigation
         path: "/products",
-        csrfToken: res.locals.csrfToken
+        csrfToken: res.locals.csrfToken,
+        user: req.user.name
       });
     })
     .catch(err => errorUtils.handle500Error(err, next));
@@ -96,7 +98,8 @@ exports.getIndex = (req, res, next) => {
         nextPage: page + 1,
         previousPage: page - 1,
         lastPage: Math.ceil(totalProducts / ITEM_PER_PAGE),
-        csrfToken: res.locals.csrfToken
+        csrfToken: res.locals.csrfToken,
+        user: req.user.name
       });
     })
     .catch(err => errorUtils.handle500Error(err, next));
@@ -112,7 +115,8 @@ exports.getCart = (req, res, next) => {
         path: "/cart",
         pageTitle: "Your Cart",
         products: products,
-        csrfToken: res.locals.csrfToken
+        csrfToken: res.locals.csrfToken,
+        user: req.user.name
       });
     })
     .catch(err => errorUtils.handle500Error(err, next));
@@ -145,7 +149,8 @@ exports.getOrders = (req, res, next) => {
         path: "/orders",
         pageTitle: "Your orders",
         orders,
-        csrfToken: res.locals.csrfToken
+        csrfToken: res.locals.csrfToken,
+        user: req.user.name
       });
     })
     .catch(err => errorUtils.handle500Error(err, next));
