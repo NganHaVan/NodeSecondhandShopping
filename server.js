@@ -27,7 +27,6 @@ const adminRoutes = require("./routes/admin");
 const shopRoutes = require("./routes/shop");
 const authRoutes = require("./routes/auth");
 const errorController = require("./controllers/error");
-const mongoURI = require("./config/database").mongoURI;
 const User = require("./models/user");
 
 const envResult = require("dotenv").config({
@@ -36,6 +35,10 @@ const envResult = require("dotenv").config({
 if (envResult.error) {
   throw envResult.error;
 }
+const mongoURI =
+  process.env.NODE_ENV === "development"
+    ? require("./config/database").mongoURI
+    : process.env.MONGOURI;
 
 const csrfProtection = csrf();
 
@@ -43,7 +46,6 @@ const csrfProtection = csrf();
 const certificate = fs.readFileSync("server.cert"); */
 
 const app = express();
-// TODO: Setup mongoUI for production
 const store = new MongoDBStore({
   uri: mongoURI,
   collection: "sessions"
@@ -143,20 +145,21 @@ app.use(shopRoutes);
 app.use(authRoutes);
 
 // Handle error pages
-// app.get("/500", errorController.get500);
-// app.use(errorController.get404);
+app.get("/500", errorController.get500);
+app.use(errorController.get404);
 //  NOTE: Express can detect this is a special kind of middleware and move right away to error handling middleware when next(params) is called
-/* app.use((error, req, res, next) => {
+app.use((error, req, res, next) => {
   // console.log(error);
   if (error) {
     res.status(500).render("500", {
       pageTitle: "Page Error",
       path: "/500",
-      isAuthenticated: req.session.isLoggedIn
+      isAuthenticated: req.session.isLoggedIn,
+      user: req.user.name
     });
     // res.status(500).send("Something went wrong");
   }
-}); */
+});
 
 /* // Allow using middleware functions - accept an array of request handlers. It is executed when you access the website
 app.use((req, res, next) => {
