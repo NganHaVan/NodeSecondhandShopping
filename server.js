@@ -14,7 +14,7 @@ const path = require("path");
 const bodyParser = require("body-parser");
 const session = require("express-session");
 // const SequelizeStore = require("connect-session-sequelize")(session.Store);
-// const csrf = require("csurf");
+const csrf = require("csurf");
 const MongoDBStore = require("connect-mongodb-session")(session);
 const flash = require("connect-flash");
 const multer = require("multer");
@@ -37,9 +37,7 @@ if (envResult.error) {
   throw envResult.error;
 }
 
-// const store = new SequelizeStore({ db: sequelize });
-
-// const csrfProtection = csrf();
+const csrfProtection = csrf();
 
 /* const privateKey = fs.readFileSync("server.key");
 const certificate = fs.readFileSync("server.cert"); */
@@ -103,18 +101,19 @@ app.use(
     resave: false,
     saveUninitialized: true,
     unset: "destroy",
-    store
+    store,
+    cookie: { expires: new Date(Date.now() + 24 * 3600 * 1000) }
   })
 );
 
-// app.use(csrfProtection);
+app.use(csrfProtection);
 // NOTE: We can use middleware on the req obj
 app.use(flash());
 
 // res.locals => Create local variable for all views(only)
 app.use((req, res, next) => {
   res.locals.isAuthenticated = req.session.isLoggedIn;
-  // res.locals.csrfToken = req.csrfToken();
+  res.locals.csrfToken = req.csrfToken();
   next();
 });
 
@@ -176,20 +175,6 @@ mongoose
   .connect(mongoURI)
   .then(res => {
     console.log("Connected to MLab");
-    User.find({ email: "ha@example.com" })
-      .then(user => {
-        if (!user) {
-          const user = new User({
-            name: "Ha Van",
-            email: "ha@example.com",
-            cart: {
-              items: []
-            }
-          });
-          user.save();
-        }
-      })
-      .catch(err => console.log(err));
     app.listen(process.env.PORT || 8080, () => {
       console.log(`Server is running on port ${process.env.PORT || 8080}`);
     });

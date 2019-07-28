@@ -15,7 +15,8 @@ exports.getAddProduct = (req, res, next) => {
     path: "/admin/add-product",
     editing: false,
     product: undefined,
-    errorMessage: ""
+    errorMessage: "",
+    csrfToken: res.locals.csrfToken
   });
 };
 
@@ -56,7 +57,8 @@ exports.postAddProduct = (req, res, next) => {
       path: "/admin/add-product",
       editing: false,
       product: { title, price, description },
-      errorMessage: "Attached file is not an image"
+      errorMessage: "Attached file is not an image",
+      csrfToken: res.locals.csrfToken
     });
   }
 };
@@ -104,7 +106,8 @@ exports.getEditProduct = (req, res, next) => {
         path: "/admin/add-product",
         editing: editMode,
         product,
-        errorMessage: ""
+        errorMessage: "",
+        csrfToken: res.locals.csrfToken
       });
     })
     .catch(err => console.log(err));

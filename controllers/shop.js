@@ -16,7 +16,8 @@ exports.getProducts = (req, res, next) => {
       res.render("shop/product-list", {
         prods: products,
         pageTitle: "All Products",
-        path: "/products"
+        path: "/products",
+        csrfToken: res.locals.csrfToken
       });
     })
     .catch(err => errorUtils.handle500Error(err, next));
@@ -46,7 +47,8 @@ exports.getProduct = (req, res, next) => {
         product: product,
         pageTitle: product.title,
         // Path in navigation
-        path: "/products"
+        path: "/products",
+        csrfToken: res.locals.csrfToken
       });
     })
     .catch(err => errorUtils.handle500Error(err, next));
@@ -74,15 +76,6 @@ exports.getProduct = (req, res, next) => {
 exports.getIndex = (req, res, next) => {
   const page = parseInt(req.query.page) || 1;
   let totalProducts;
-  /* Product.findAndCountAll({ offset: (page - 1) * ITEM_PER_PAGE, limit: ITEM_PER_PAGE })
-    .then(products => {
-      console.log({result: products})
-      res.render("shop/index", {
-        prods: products.rows,
-        pageTitle: "Shop",
-        path: "/"
-      });
-    }) */
   Product.find()
     .count()
     .then(number => {
@@ -102,29 +95,11 @@ exports.getIndex = (req, res, next) => {
         hasPreviousPage: page > 1,
         nextPage: page + 1,
         previousPage: page - 1,
-        lastPage: Math.ceil(totalProducts / ITEM_PER_PAGE)
+        lastPage: Math.ceil(totalProducts / ITEM_PER_PAGE),
+        csrfToken: res.locals.csrfToken
       });
     })
     .catch(err => errorUtils.handle500Error(err, next));
-  /* Product.fetchAll(products => {
-    res.render("shop/index", {
-      prods: products,
-      pageTitle: "Shop",
-      path: "/"
-    });
-  }); */
-  /* 
-  // mysql2
-  Product.fetchAll()
-    .then(([rows, fields]) => {
-      // console.log({ rows, fields });
-      res.render("shop/index", {
-        prods: rows,
-        pageTitle: "Shop",
-        path: "/"
-      });
-    })
-    .catch(err => console.log(err)); */
 };
 
 exports.getCart = (req, res, next) => {
@@ -136,7 +111,8 @@ exports.getCart = (req, res, next) => {
       res.render("shop/cart", {
         path: "/cart",
         pageTitle: "Your Cart",
-        products: products
+        products: products,
+        csrfToken: res.locals.csrfToken
       });
     })
     .catch(err => errorUtils.handle500Error(err, next));
@@ -168,7 +144,8 @@ exports.getOrders = (req, res, next) => {
       res.render("shop/orders", {
         path: "/orders",
         pageTitle: "Your orders",
-        orders
+        orders,
+        csrfToken: res.locals.csrfToken
       });
     })
     .catch(err => errorUtils.handle500Error(err, next));

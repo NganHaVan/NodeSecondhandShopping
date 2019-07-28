@@ -26,7 +26,8 @@ exports.getLogin = (req, res, next) => {
     path: "/login",
     pageTitle: "Login",
     isAuthenticated: false,
-    errorMessage: message
+    errorMessage: message,
+    csrfToken: res.locals.csrfToken
   });
 };
 
@@ -89,7 +90,8 @@ exports.getSignUp = (req, res, next) => {
       name: "",
       confirmPassword: ""
     },
-    validationErrors: []
+    validationErrors: [],
+    csrfToken: res.locals.csrfToken
   });
 };
 
@@ -144,7 +146,8 @@ exports.getResetPassword = (req, res, next) => {
     errorMessage: message,
     token: null,
     email: null,
-    env: process.env.NODE_ENV || "development"
+    env: process.env.NODE_ENV || "development",
+    csrfToken: res.locals.csrfToken
   });
 };
 
@@ -198,7 +201,7 @@ exports.postLogout = (req, res, next) => {
     if (err) {
       console.log(err);
     }
-    res.clearCookie("connect.sid");
+    res.clearCookie("connect.sid", { domain: "localhost", path: "/" });
     res.redirect("/login");
   });
 };
@@ -206,11 +209,9 @@ exports.postLogout = (req, res, next) => {
 exports.getNewPassword = (req, res, next) => {
   const { token } = req.params;
   User.findOne({
-    where: {
-      resetToken: token,
-      resetTokenExpiration: {
-        [Op.gt]: Date.now()
-      }
+    resetToken: token,
+    resetTokenExpiration: {
+      [Op.gt]: Date.now()
     }
   })
     .then(user => {
@@ -223,7 +224,8 @@ exports.getNewPassword = (req, res, next) => {
         pageTitle: "New password",
         errorMessage: null,
         userId: user.id.toString(),
-        passwordToken: token
+        passwordToken: token,
+        csrfToken: res.locals.csrfToken
       });
     })
     .catch(err => errorUtils.handle500Error(err, next));
@@ -232,12 +234,10 @@ exports.getNewPassword = (req, res, next) => {
 exports.postNewPassword = (req, res, next) => {
   const { userId, passwordToken, password } = req.body;
   User.findOne({
-    where: {
-      id: userId,
-      resetToken: passwordToken,
-      resetTokenExpiration: {
-        [Op.gt]: Date.now()
-      }
+    _id: userId,
+    resetToken: passwordToken,
+    resetTokenExpiration: {
+      [Op.gt]: Date.now()
     }
   })
     .then(user => {
