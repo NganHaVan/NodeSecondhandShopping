@@ -1,0 +1,39 @@
+{
+  "addons": [
+
+  ],
+  "buildpacks": [
+    {
+      "url": "heroku/nodejs"
+    }
+  ],
+  "env": {
+    "DATABASE_HOSTNAME": {
+      "required": true
+    },
+    "DATABASE_NAME": {
+      "required": true
+    },
+    "DATABASE_PASSWORD": {
+      "required": true
+    },
+    "DATABASE_PORT": {
+      "required": true
+    },
+    "DATABASE_USERNAME": {
+      "required": true
+    },
+    "NODE_ENV": {
+      "required": true
+    }
+  },
+  "formation": {
+    "web": {
+      "quantity": 1
+    }
+  },
+  "name": "node_project",
+  "scripts": {
+  },
+  "stack": "heroku-18"
+}
