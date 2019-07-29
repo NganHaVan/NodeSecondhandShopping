@@ -1,3 +1,4 @@
+const { validationResult } = require("express-validator/check");
 const Product = require("../models/product");
 // const Cart = require("../models/cart");
 const path = require("../utils/path");
@@ -37,7 +38,10 @@ exports.postAddProduct = (req, res, next) => {
   })
     .then(() => res.redirect("/"))
     .catch(err => console.log(err)); */
-  if (image) {
+
+  const errors = validationResult(req);
+  if (image && errors.isEmpty()) {
+    console.log({ isEmpty: errors.isEmpty() });
     const imageUrl = image.path;
     const product = new Product({
       title,
@@ -53,13 +57,15 @@ exports.postAddProduct = (req, res, next) => {
         errorUtils.handle500Error(err, next);
       });
   } else {
+    console.log({ valError: errors.array() });
     return res.status(422).render("admin/edit-product", {
       pageTitle: "Product form",
       path: "/admin/add-product",
       editing: false,
       product: { title, price, description },
-      errorMessage: "Attached file is not an image",
-      csrfToken: res.locals.csrfToken
+      errorMessage: errors.array(),
+      csrfToken: res.locals.csrfToken,
+      user: req.user.name
     });
   }
 };
@@ -129,7 +135,11 @@ exports.postEditProduct = (req, res, next) => {
   res.redirect("/admin/products"); */
   return Product.findById(productId)
     .then(prod => {
-      if (prod.userId.toString() !== req.user._id) {
+      if (prod.userId.toString() !== req.user._id.toString()) {
+        console.log({
+          prodUserId: prod.userId.toString(),
+          userId: req.user._id.toString()
+        });
         return res.redirect("/");
       }
       prod.title = title;
@@ -165,6 +175,7 @@ exports.getProducts = (req, res, next) => {
         prods: products,
         pageTitle: "Your product",
         path: "/admin/products",
+        csrfToken: res.locals.csrfToken,
         user: req.user.name
       });
     })

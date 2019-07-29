@@ -13,6 +13,7 @@ exports.get500 = (req, res, next) => {
     pageTitle: "Page Error",
     path: "/500",
     isAuthenticated: req.session.isLoggedIn,
-    csrfToken: res.locals.csrfToken
+    csrfToken: res.locals.csrfToken,
+    user: req.user ? req.user.name : ""
   });
 };

@@ -4,7 +4,6 @@ const authUtils = require("../utils/auth");
 const errorUtils = require("../utils/errors");
 const crypto = require("crypto");
 const Sequelize = require("sequelize");
-const Op = Sequelize.Op;
 const { validationResult } = require("express-validator/check");
 
 exports.getLogin = (req, res, next) => {
