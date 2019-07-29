@@ -150,12 +150,13 @@ app.use(errorController.get404);
 //  NOTE: Express can detect this is a special kind of middleware and move right away to error handling middleware when next(params) is called
 app.use((error, req, res, next) => {
   // console.log(error);
+  console.log({ user: req.user });
   if (error) {
     res.status(500).render("500", {
       pageTitle: "Page Error",
       path: "/500",
       isAuthenticated: req.session.isLoggedIn,
-      user: req.user.name
+      user: req.user ? req.user.name : "admin"
     });
     // res.status(500).send("Something went wrong");
   }
