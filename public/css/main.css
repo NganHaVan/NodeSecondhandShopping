@@ -2,6 +2,7 @@
 
 * {
   box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 body {
@@ -53,6 +54,7 @@ form {
   margin: 0;
   padding: 0;
   display: flex;
+  align-items: center;
 }
 
 .main-header__item {
@@ -61,13 +63,21 @@ form {
 }
 
 .main-header__item a,
-.main-header__item button {
+.main-header__item button,
+.main-header__item p {
   font: inherit;
   background: transparent;
   border: none;
   text-decoration: none;
   color: white;
   cursor: pointer;
+  align-self: center;
+  vertical-align: center;
+}
+
+.welcome {
+  cursor: default !important;
+  margin-top: 20px;
 }
 
 .main-header__item a:hover,
@@ -187,6 +197,8 @@ form {
 }
 
 .card__actions {
+  display: flex;
+  justify-content: space-around;
   padding: 1rem;
   text-align: center;
 }
@@ -224,6 +236,7 @@ form {
   background: red;
   color: white;
 }
+
 .user-message {
   margin: auto;
   width: 90%;
@@ -263,6 +276,46 @@ form {
 .pagination a.active {
   background: #00695c;
   color: white;
+}
+
+.input-container {
+  margin: 3em auto;
+  max-width: 300px;
+  background-color: #EDEDED;
+  border: 1px solid #DFDFDF;
+  border-radius: 5px;
+}
+
+input[type='file']#image {
+  display: none;
+}
+
+.file-info {
+  font-size: 0.9em;
+}
+
+.browse-btn {
+  background: #03A595;
+  color: #fff;
+  min-height: 35px;
+  padding: 10px;
+  border: none;
+  border-top-left-radius: 5px;
+  border-bottom-left-radius: 5px;
+}
+
+.browse-btn:hover {
+  background: #4ec0b4;
+}
+
+@media(max-width: 500px) {
+  * {
+    width: 100%;
+  }
+
+  .card__actions {
+    display: block;
+  }
 }
 
 @media (min-width: 768px) {

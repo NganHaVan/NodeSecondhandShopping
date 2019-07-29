@@ -10,39 +10,46 @@
 // Using express package
 const express = require("express");
 const fs = require("fs");
+const path = require("path");
 const bodyParser = require("body-parser");
 const session = require("express-session");
-const SequelizeStore = require("connect-session-sequelize")(session.Store);
+// const SequelizeStore = require("connect-session-sequelize")(session.Store);
 const csrf = require("csurf");
+const MongoDBStore = require("connect-mongodb-session")(session);
 const flash = require("connect-flash");
 const multer = require("multer");
 const helmet = require("helmet");
 const compression = require("compression");
 const morgan = require("morgan");
+const mongoose = require("mongoose");
 
 const adminRoutes = require("./routes/admin");
 const shopRoutes = require("./routes/shop");
 const authRoutes = require("./routes/auth");
 const errorController = require("./controllers/error");
-// const db = require("./utils/database");
-require('dotenv').config();
-const sequelize = require("./utils/database");
-const Product = require("./models/product");
 const User = require("./models/user");
-const Cart = require("./models/cart");
-const CartItem = require("./models/cart-item");
-const Order = require("./models/order");
-const OrderItem = require("./models/order-item");
 
-const store = new SequelizeStore({ db: sequelize });
+const envResult = require("dotenv").config({
+  path: path.join(__dirname, ".env")
+});
+if (envResult.error) {
+  throw envResult.error;
+}
+const mongoURI =
+  process.env.NODE_ENV === "development"
+    ? require("./config/database").mongoURI
+    : process.env.MONGOURI;
 
 const csrfProtection = csrf();
 
 /* const privateKey = fs.readFileSync("server.key");
 const certificate = fs.readFileSync("server.cert"); */
 
-const path = require("path");
 const app = express();
+const store = new MongoDBStore({
+  uri: mongoURI,
+  collection: "sessions"
+});
 
 app.enable("trust proxy");
 
@@ -95,8 +102,9 @@ app.use(
     secret: "My secret for node project",
     resave: false,
     saveUninitialized: true,
+    unset: "destroy",
     store,
-    unset: "destroy"
+    cookie: { expires: new Date(Date.now() + 24 * 3600 * 1000) }
   })
 );
 
@@ -115,7 +123,7 @@ app.use((req, res, next) => {
   if (!req.session.user) {
     next();
   } else {
-    User.findByPk(req.session.user.id)
+    User.findById(req.session.user._id)
       .then(user => {
         if (!user) {
           return next();
@@ -146,7 +154,8 @@ app.use((error, req, res, next) => {
     res.status(500).render("500", {
       pageTitle: "Page Error",
       path: "/500",
-      isAuthenticated: req.session.isLoggedIn
+      isAuthenticated: req.session.isLoggedIn,
+      user: req.user.name
     });
     // res.status(500).send("Something went wrong");
   }
@@ -164,62 +173,16 @@ app.use((req, res, next) => {
   res.send("<h1>Hello from Express</h1>");
 }); */
 
-// Database
-// Relate the db
-// One-to-many
-Product.belongsTo(User, {
-  constraints: true,
-  onDelete: "CASCADE" /* mean when user is delete, product would be deleted*/
-}); // Not purchase yet
-User.hasMany(Product);
-// One-to-one
-User.hasOne(Cart);
-Cart.belongsTo(User);
-// Many-to-many
-Cart.belongsToMany(Product, { through: CartItem });
-Product.belongsToMany(Cart, { through: CartItem });
-// One-to-many
-Order.belongsTo(User);
-User.hasMany(Order);
-
-Order.belongsToMany(Product, { through: OrderItem });
-// Product.belongsToMany(Order, {through: OrderItem});
-
-// Sync model with database
-sequelize
-  // To refresh the db
-  // .sync({ force: true })
-  .sync()
-  /*   .then(result => {
-    return User.findByPk(1);
-    // console.log(result);
-  })
-  .then(user => {
-    if (!user) {
-      return User.create({ name: "Janet", email: "test@test.com" });
-    }
-    return user;
-  })
-  .then(user => {
-    // console.log(user);
-    return user.getCart().then(cart => {
-      if (!cart) {
-        cart = user.createCart();
-      }
-      return cart;
-    });
-  }) */
-  // .authenticate()
-  .then(result => {
+mongoose
+  .set("useNewUrlParser", true)
+  .connect(mongoURI)
+  .then(res => {
+    console.log("Connected to MLab");
     app.listen(process.env.PORT || 8080, () => {
       console.log(`Server is running on port ${process.env.PORT || 8080}`);
     });
-    /* https
-      .createServer({ key: privateKey, cert: certificate }, app)
-      .listen(process.env.PORT || 8080, () => {
-        console.log(`Server is running on port ${process.env.PORT || 8080}`);
-      }); */
   })
   .catch(err => {
     console.log(err);
+    throw err;
   });

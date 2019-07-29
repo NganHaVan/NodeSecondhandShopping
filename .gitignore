@@ -8,3 +8,4 @@ server.key
 nodemon.json
 app.flexible.yaml
 .env
+/config

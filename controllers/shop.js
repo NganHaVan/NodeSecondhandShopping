@@ -4,21 +4,21 @@ const PDFDocument = require("pdfkit");
 const rootDir = require("../utils/path");
 
 const Product = require("../models/product");
-const Cart = require("../models/cart");
 const Order = require("../models/order");
-const OrderItem = require("../models/order-item");
 const User = require("../models/user");
 const errorUtils = require("../utils/errors");
 
 const ITEM_PER_PAGE = 3;
 
 exports.getProducts = (req, res, next) => {
-  Product.findAll()
+  Product.find()
     .then(products => {
       res.render("shop/product-list", {
         prods: products,
         pageTitle: "All Products",
-        path: "/products"
+        path: "/products",
+        csrfToken: res.locals.csrfToken,
+        user: req.user.name
       });
     })
     .catch(err => errorUtils.handle500Error(err, next));
@@ -42,13 +42,15 @@ exports.getProducts = (req, res, next) => {
 
 exports.getProduct = (req, res, next) => {
   const prodId = req.params.productId;
-  Product.findByPk(prodId)
+  Product.findById(prodId)
     .then(product => {
       res.render("shop/product-detail", {
         product: product,
         pageTitle: product.title,
         // Path in navigation
-        path: "/products"
+        path: "/products",
+        csrfToken: res.locals.csrfToken,
+        user: req.user.name
       });
     })
     .catch(err => errorUtils.handle500Error(err, next));
@@ -76,22 +78,13 @@ exports.getProduct = (req, res, next) => {
 exports.getIndex = (req, res, next) => {
   const page = parseInt(req.query.page) || 1;
   let totalProducts;
-  /* Product.findAndCountAll({ offset: (page - 1) * ITEM_PER_PAGE, limit: ITEM_PER_PAGE })
-    .then(products => {
-      console.log({result: products})
-      res.render("shop/index", {
-        prods: products.rows,
-        pageTitle: "Shop",
-        path: "/"
-      });
-    }) */
-  Product.count()
-    .then(total => {
-      totalProducts = total;
-      return Product.findAll({
-        offset: (page - 1) * ITEM_PER_PAGE,
-        limit: ITEM_PER_PAGE
-      });
+  Product.find()
+    .count()
+    .then(number => {
+      totalProducts = number;
+      return Product.find()
+        .skip((page - 1) * ITEM_PER_PAGE)
+        .limit(ITEM_PER_PAGE);
     })
     .then(products => {
       res.render("shop/index", {
@@ -104,82 +97,26 @@ exports.getIndex = (req, res, next) => {
         hasPreviousPage: page > 1,
         nextPage: page + 1,
         previousPage: page - 1,
-        lastPage: Math.ceil(totalProducts / ITEM_PER_PAGE)
+        lastPage: Math.ceil(totalProducts / ITEM_PER_PAGE),
+        csrfToken: res.locals.csrfToken,
+        user: req.user.name
       });
     })
     .catch(err => errorUtils.handle500Error(err, next));
-  /* Product.fetchAll(products => {
-    res.render("shop/index", {
-      prods: products,
-      pageTitle: "Shop",
-      path: "/"
-    });
-  }); */
-  /* 
-  // mysql2
-  Product.fetchAll()
-    .then(([rows, fields]) => {
-      // console.log({ rows, fields });
-      res.render("shop/index", {
-        prods: rows,
-        pageTitle: "Shop",
-        path: "/"
-      });
-    })
-    .catch(err => console.log(err)); */
 };
 
 exports.getCart = (req, res, next) => {
-  // Manual
-  /* Cart.getCart(({ products, totalPrice }) => {
-    Product.fetchAll(prods => {
-      let cartList = [];
-      for (prod of prods) {
-        let foundProduct = products.find(product => product.id === prod.id);
-        if (foundProduct) {
-          cartList = [...cartList, { ...prod, qty: foundProduct.qty }];
-        }
-      }
+  req.user
+    .populate("cart.items.productId")
+    .execPopulate()
+    .then(user => {
+      let products = user.cart.items;
       res.render("shop/cart", {
         path: "/cart",
-        pageTitle: "Your cart",
-        products: cartList,
-        totalPrice
-      });
-    });
-  }); */
-  /* User.findByPk(req.session.user.id)
-    .then(user => user.getCart())
-    .then(cart => {
-      return cart
-        .getProducts()
-        .then(products => {
-          res.render("shop/cart", {
-            path: "/cart",
-            pageTitle: "Your Cart",
-            products: products,
-            isAuthenticated: req.session.isLoggedIn
-          });
-        })
-        .catch(err => console.log(err));
-    })
-    .catch(err => console.log(err)); */
-
-  req.user
-    .getCart()
-    .then(cart => {
-      if (!cart) {
-        return req.user.createCart();
-      }
-      return cart;
-    })
-    .then(cart => {
-      return cart.getProducts().then(products => {
-        res.render("shop/cart", {
-          path: "/cart",
-          pageTitle: "Your Cart",
-          products: products
-        });
+        pageTitle: "Your Cart",
+        products: products,
+        csrfToken: res.locals.csrfToken,
+        user: req.user.name
       });
     })
     .catch(err => errorUtils.handle500Error(err, next));
@@ -187,52 +124,12 @@ exports.getCart = (req, res, next) => {
 
 // NOTE: req.body is captured by the name - value attributes from input tag in HTML
 exports.postCart = (req, res, next) => {
-  // Check name attributes in product-detail.ejs
-  /* const prodId = req.body.productId;
-  const product = Product.findById(prodId, prod => {
-    Cart.addCart(prodId, prod.price);
-  });
-  res.redirect("/cart"); */
-
   const prodId = req.body.productId;
-  let fetchedCart;
-  let newQuantity = 1;
-  let sessionUser;
-  User.findByPk(req.session.user.id)
-    .then(user => {
-      sessionUser = user;
-      return user.getCart();
+  Product.findById(prodId)
+    .then(prod => {
+      return req.user.addToCart(prod);
     })
-    .then(cart => {
-      if (!cart) {
-        return sessionUser.createCart();
-      }
-      return cart;
-    })
-    .then(cart => {
-      fetchedCart = cart;
-      return cart.getProducts({ where: { id: prodId } });
-    })
-    .then(products => {
-      let product;
-      if (products.length > 0) {
-        product = products[0];
-      }
-
-      if (product) {
-        const oldQuantity = product.cartItem.quantity;
-        newQuantity = oldQuantity + 1;
-        return product;
-      }
-      return Product.findByPk(prodId);
-    })
-    .then(product => {
-      // addProduct also create and update if product does not exist
-      return fetchedCart.addProduct(product, {
-        through: { quantity: newQuantity }
-      });
-    })
-    .then(() => {
+    .then(result => {
       res.redirect("/cart");
     })
     .catch(err => errorUtils.handle500Error(err, next));
@@ -240,53 +137,46 @@ exports.postCart = (req, res, next) => {
 
 exports.deleteCart = (req, res, next) => {
   const prodId = req.body.productId;
-  User.findByPk(req.session.user.id)
-    .then(user => user.getCart())
-    .then(cart => {
-      return cart.getProducts();
-    })
-    .then(products => {
-      return products[0].cartItem.destroy();
-    })
-    .then(result => res.redirect("/cart"))
+  req.user
+    .removeCart(prodId)
     .catch(err => errorUtils.handle500Error(err, next));
 };
 
 exports.getOrders = (req, res, next) => {
-  User.findByPk(req.session.user.id)
-    .then(user => user.getOrders({ include: ["products"] }))
+  Order.find({ "user.userId": req.user._id })
     .then(orders => {
       res.render("shop/orders", {
         path: "/orders",
         pageTitle: "Your orders",
-        orders
+        orders,
+        csrfToken: res.locals.csrfToken,
+        user: req.user.name
       });
     })
     .catch(err => errorUtils.handle500Error(err, next));
 };
 
 exports.postOrder = (req, res, next) => {
-  let fetchedCart;
-  let currentUser;
-  User.findByPk(req.session.user.id)
+  req.user
+    .populate("cart.items.productId")
+    .execPopulate()
     .then(user => {
-      currentUser = user;
-      return user.getCart();
-    })
-    .then(cart => {
-      fetchedCart = cart;
-      return cart.getProducts();
-    })
-    .then(products => {
-      return currentUser.createOrder().then(order => {
-        return order.addProducts(
-          products.map(prod => {
-            prod.orderItem = { quantity: prod.cartItem.quantity };
-            return prod;
-          })
-        );
+      let products = user.cart.items.map(item => {
+        return {
+          productData: { ...item.productId._doc },
+          quantity: item.quantity
+        };
       });
+      const order = new Order({
+        user: {
+          name: req.user.name,
+          userId: req.user
+        },
+        products
+      });
+      order.save();
     })
+    .then(result => req.user.clearCart())
     .then(result => res.redirect("/orders"))
     .catch(err => errorUtils.handle500Error(err, next));
 };
@@ -344,7 +234,7 @@ exports.getInvoice = async (req, res, next) => {
   //     pdfDoc.end(); */
   //   });
   try {
-    const order = await Order.findByPk(orderId);
+    const order = await Order.findById(orderId);
     if (!order) {
       throw new Error("No orders found.");
     }

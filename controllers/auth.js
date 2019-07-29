@@ -26,7 +26,8 @@ exports.getLogin = (req, res, next) => {
     path: "/login",
     pageTitle: "Login",
     isAuthenticated: false,
-    errorMessage: message
+    errorMessage: message,
+    csrfToken: res.locals.csrfToken
   });
 };
 
@@ -38,7 +39,7 @@ exports.postLogin = (req, res, next) => {
   // Fake login process.
   // NOTE SESSION: By setting values in the session, we start to share them across request
   const { email, password } = req.body;
-  User.findOne({ where: { email } })
+  User.findOne({ email })
     .then(user => {
       if (!user) {
         // NOTE: Flash error message into session
@@ -48,7 +49,7 @@ exports.postLogin = (req, res, next) => {
         });
       }
       bcrypt
-        .compare(password, user.get("password"))
+        .compare(password, user.password)
         .then(doMatch => {
           if (doMatch) {
             req.session.isLoggedIn = true;
@@ -89,7 +90,8 @@ exports.getSignUp = (req, res, next) => {
       name: "",
       confirmPassword: ""
     },
-    validationErrors: []
+    validationErrors: [],
+    csrfToken: res.locals.csrfToken
   });
 };
 
@@ -111,10 +113,16 @@ exports.postSignup = (req, res, next) => {
   bcrypt
     .hash(password, 12)
     .then(hashedPassword => {
-      return User.create({ name, email, password: hashedPassword });
+      let newUser = new User({
+        name,
+        email,
+        password: hashedPassword,
+        cart: { items: [] }
+      });
+      return newUser.save();
     })
     .then(user => {
-      User.findByPk(user.get("id")).then(newUser => {
+      User.findById(user._id).then(newUser => {
         req.session.isLoggedIn = true;
         req.session.user = newUser;
         // NOTE: You must save session here, because session middleware take a little time to save data in db. redirect() is fired independently. It does not wait until session has been stored in db
@@ -137,7 +145,9 @@ exports.getResetPassword = (req, res, next) => {
     pageTitle: "Reset password",
     errorMessage: message,
     token: null,
-    email: null
+    email: null,
+    env: process.env.NODE_ENV || "development",
+    csrfToken: res.locals.csrfToken
   });
 };
 
@@ -155,24 +165,27 @@ exports.postResetPassword = (req, res, next) => {
       });
     }
     const token = buffer.toString("hex");
-    User.findOne({ where: { email } })
+    User.findOne({ email })
       .then(user => {
         if (!user) {
-          req.flash("error", "No account with that email found.");
-          return req.session.save(err => {
+          req.flash("error", "No account found with that email.");
+          /* return req.session.save(err => {
             res.redirect("/reset-password");
-          });
+          }); */
+          return res.redirect("/reset-password");
         }
         user.resetToken = token;
         user.resetTokenExpiration = Date.now() + 3600000;
-        return user.save().then(() => {
-          return res.render("auth/reset", {
-            path: "/reset-password",
-            pageTitle: "Reset password",
-            errorMessage: null,
-            token,
-            email
-          });
+        return user.save();
+      })
+      .then(() => {
+        return res.render("auth/reset", {
+          path: "/reset-password",
+          pageTitle: "Reset password",
+          errorMessage: null,
+          token,
+          email,
+          env: process.env.NODE_ENV || "development"
         });
       })
       // TODO: Send email
@@ -187,7 +200,7 @@ exports.postLogout = (req, res, next) => {
     if (err) {
       console.log(err);
     }
-    res.clearCookie("connect.sid");
+    res.clearCookie("connect.sid", { domain: "localhost", path: "/" });
     res.redirect("/login");
   });
 };
@@ -195,11 +208,9 @@ exports.postLogout = (req, res, next) => {
 exports.getNewPassword = (req, res, next) => {
   const { token } = req.params;
   User.findOne({
-    where: {
-      resetToken: token,
-      resetTokenExpiration: {
-        [Op.gt]: Date.now()
-      }
+    resetToken: token,
+    resetTokenExpiration: {
+      $gt: Date.now()
     }
   })
     .then(user => {
@@ -211,8 +222,9 @@ exports.getNewPassword = (req, res, next) => {
         path: "/new-password",
         pageTitle: "New password",
         errorMessage: null,
-        userId: user.id.toString(),
-        passwordToken: token
+        userId: user._id.toString(),
+        passwordToken: token,
+        csrfToken: res.locals.csrfToken
       });
     })
     .catch(err => errorUtils.handle500Error(err, next));
@@ -220,13 +232,12 @@ exports.getNewPassword = (req, res, next) => {
 
 exports.postNewPassword = (req, res, next) => {
   const { userId, passwordToken, password } = req.body;
+  let resetUser;
   User.findOne({
-    where: {
-      id: userId,
-      resetToken: passwordToken,
-      resetTokenExpiration: {
-        [Op.gt]: Date.now()
-      }
+    _id: userId,
+    resetToken: passwordToken,
+    resetTokenExpiration: {
+      $gt: Date.now()
     }
   })
     .then(user => {
@@ -237,17 +248,14 @@ exports.postNewPassword = (req, res, next) => {
         );
         return req.session.save(err => res.redirect("/reset-password"));
       }
+      resetUser = user;
       return bcrypt.hash(password, 12);
     })
     .then(hashedPassword => {
-      return User.update(
-        {
-          password: hashedPassword,
-          resetToken: null,
-          resetTokenExpiration: null
-        },
-        { where: { id: userId } }
-      );
+      resetUser.password = hashedPassword;
+      resetUser.resetToken = undefined;
+      resetUser.resetTokenExpiration = undefined;
+      return resetUser.save();
     })
     .then(() => res.redirect("/login"))
     .catch(error => errorUtils.handle500Error(error, next));
