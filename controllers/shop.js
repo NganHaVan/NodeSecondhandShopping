@@ -18,7 +18,7 @@ exports.getProducts = (req, res, next) => {
         pageTitle: "All Products",
         path: "/products",
         csrfToken: res.locals.csrfToken,
-        user: req.user.name
+        user: req.user ? req.user.name : ""
       });
     })
     .catch(err => errorUtils.handle500Error(err, next));
@@ -99,7 +99,7 @@ exports.getIndex = (req, res, next) => {
         previousPage: page - 1,
         lastPage: Math.ceil(totalProducts / ITEM_PER_PAGE),
         csrfToken: res.locals.csrfToken,
-        user: req.user.name
+        user: req.user ? req.user.name : ""
       });
     })
     .catch(err => errorUtils.handle500Error(err, next));
@@ -241,7 +241,7 @@ exports.getInvoice = async (req, res, next) => {
     if (order.userId !== req.user.id) {
       throw new Error("Unauthorized download");
     }
-    const products = await order.getProducts();
+    const products = await order.find();
     if (products.length === 0) {
       throw new Error("No items found.");
     }
