@@ -56,15 +56,6 @@ router.post(
     check("price")
       .isFloat()
       .withMessage("Invalid price"),
-    body("image")
-      .isEmpty()
-      .custom((value, { req }) => {
-        if (!req.file) {
-          throw new Error("Invalid or empty image");
-        } else {
-          return Promise.resolve();
-        }
-      }),
     check("description")
       .trim()
       .isLength({ min: 5 })

@@ -131,26 +131,36 @@ exports.postEditProduct = (req, res, next) => {
   );
   editedProduct.save();
   res.redirect("/admin/products"); */
-  return Product.findById(productId)
-    .then(prod => {
-      if (prod.userId.toString() !== req.user._id.toString()) {
-        console.log({
-          prodUserId: prod.userId.toString(),
-          userId: req.user._id.toString()
-        });
-        return res.redirect("/");
-      }
-      prod.title = title;
-      prod.price = price;
-      prod.description = description;
-      if (image && image.path !== prod.imageURL) {
-        fileUtils.deleteFile(prod.imageURL);
-        prod.imageURL = image.path;
-      }
-      return prod.save();
-    })
-    .then(() => res.redirect("/admin/products"))
-    .catch(err => errorUtils.handle500Error(err, next));
+
+  const errors = validationResult(req);
+  if (errors.isEmpty()) {
+    return Product.findById(productId)
+      .then(prod => {
+        if (prod.userId.toString() !== req.user._id.toString()) {
+          return res.redirect("/");
+        }
+        prod.title = title;
+        prod.price = price;
+        prod.description = description;
+        if (image) {
+          fileUtils.deleteFile(prod.imageURL);
+          prod.imageURL = image.path;
+        }
+        return prod.save();
+      })
+      .then(() => res.redirect("/admin/products"))
+      .catch(err => errorUtils.handle500Error(err, next));
+  } else {
+    return res.status(422).render("admin/edit-product", {
+      pageTitle: "Product form",
+      path: "/admin/add-product",
+      editing: false,
+      product: { title, price, description },
+      errorMessage: errors.array(),
+      csrfToken: res.locals.csrfToken,
+      user: req.user.name
+    });
+  }
 };
 
 exports.getProducts = (req, res, next) => {
@@ -187,12 +197,33 @@ exports.deleteProduct = (req, res, next) => {
   );
   Product.removeById(productId);
   res.redirect("/admin/products"); */
-  Product.deleteOne({ _id: productId, userId: req.user._id })
-    .then(removedProd => {
-      fileUtils.deleteFile(removedProd.imageURL);
+  const findProduct = new Promise((resolve, reject) =>
+    Product.findById(productId)
+      .then(prod => {
+        if (!prod) {
+          reject("No product found");
+        }
+        fileUtils.deleteFile(prod.imageURL);
+        resolve("Delete file");
+      })
+      .catch(err => reject(err))
+  );
+  const deleteProduct = new Promise((resolve, reject) => {
+    Product.deleteOne({ _id: productId, userId: req.user._id })
+      .then(() => resolve("Delete product"))
+      .catch(err => reject(err));
+  });
+  return Promise.all([findProduct, deleteProduct])
+    .then(result => {
       res.redirect("/admin/products");
+      console.log({ result });
     })
     .catch(err => {
-      errorUtils.handle500Error(err, next);
+      console.log({ err });
+      throw err;
     });
+  /* .catch(err => {
+      errorUtils.handle500Error(err, next);
+    }); */
+  // res.redirect("/admin/products");
 };
