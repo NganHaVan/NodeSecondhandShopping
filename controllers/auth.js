@@ -4,7 +4,7 @@ const authUtils = require("../utils/auth");
 const errorUtils = require("../utils/errors");
 const crypto = require("crypto");
 const Sequelize = require("sequelize");
-const { validationResult } = require("express-validator/check");
+const { validationResult } = require("express-validator");
 
 exports.getLogin = (req, res, next) => {
   // NOTE: how to get request header
@@ -18,7 +18,6 @@ exports.getLogin = (req, res, next) => {
     .split("=")[1];
   req.session.isLoggedIn = isLoggedIn; */
 
-  // console.log({ session: req.session.isAnotherLoggedIn });
   authUtils.checkIsLoggedIn(req);
   let message = authUtils.getErrorMessage(req);
   res.render("auth/login", {
@@ -26,18 +25,26 @@ exports.getLogin = (req, res, next) => {
     pageTitle: "Login",
     isAuthenticated: false,
     errorMessage: message,
-    csrfToken: res.locals.csrfToken
+    csrfToken: res.locals.csrfToken,
+    oldInput: { email: "", password: "" },
+    validationErrors: []
   });
 };
 
 exports.postLogin = (req, res, next) => {
-  // Set a cookie - reserved name: Set-cookie
-  // res.setHeader("Set-Cookie", "loggedIn=true; Max-Age=3600");
-
-  // NOTE SESSION: When you create a session, an sid is generated
-  // Fake login process.
-  // NOTE SESSION: By setting values in the session, we start to share them across request
   const { email, password } = req.body;
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(422).render("auth/login", {
+      path: "/login",
+      pageTitle: "Login",
+      isAuthenticated: false,
+      errorMessage: "Invalid email or password.",
+      csrfToken: res.locals.csrfToken,
+      validationErrors: errors.array(),
+      oldInput: { email, password }
+    });
+  }
   User.findOne({ email })
     .then(user => {
       if (!user) {
@@ -104,7 +111,7 @@ exports.postSignup = (req, res, next) => {
       path: "/signup",
       pageTitle: "Sign up",
       isAuthenticated: false,
-      errorMessage: errors.array()[0].msg,
+      errorMessage: errors.array(),
       oldInput: { name, email, password, confirmPassword },
       validationErrors: errors.array()
     });

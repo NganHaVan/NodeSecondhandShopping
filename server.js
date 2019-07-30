@@ -89,7 +89,16 @@ const fileFilter = (req, file, cb) => {
     file.mimetype === "image/jpg" ||
     file.mimetype === "image/jpeg"
   ) {
-    cb(null, true);
+    if (
+      req.body.title !== "" &&
+      req.body.description !== "" &&
+      req.body.price !== "" &&
+      Number(req.body.price) !== 0
+    ) {
+      cb(null, true);
+    } else {
+      cb(null, false);
+    }
   } else {
     cb(null, false);
   }
@@ -152,7 +161,6 @@ app.use((error, req, res, next) => {
   // console.log(error);
   if (error) {
     if (error.httpStatusCode === 500) {
-      console.log({ user: req.user, error, session: req.session });
       res.status(500).render("500", {
         pageTitle: "Page Error",
         path: "/500",

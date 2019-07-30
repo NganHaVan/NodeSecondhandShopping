@@ -9,13 +9,16 @@
     <main>
         <% if(errorMessage) {%>
         <div class="user-message user-message--error">
-            <%= errorMessage%>
+            <% for(let err of errorMessage) {%>
+            <p><%= err.msg%></p>
+            <% } %>
         </div>
         <% }%>
         <form class="login-form" action="/signup" method="POST" novalidate>
             <div class="form-control-product">
                 <label for="name">Name</label>
-                <input type="name" name="name" id="name" value="<%= oldInput.name %>">
+                <input class="<%= validationErrors.find(e => e.param === 'name') ? 'invalid' : '' %>" type="name"
+                    name="name" id="name" value="<%= oldInput.name %>">
             </div>
             <div class="form-control-product">
                 <label for="email">E-Mail</label>

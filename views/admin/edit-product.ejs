@@ -24,6 +24,16 @@
         <label for="imageUrl">Image URL</label>
         <input type="text" name="imageUrl" id="imageUrl"value="<% if(editing) {%><%= product.imageUrl %><% } %>">
       </div> -->
+      <div class="form-control-product">
+        <label for="price">Price</label>
+        <input type="number" name="price" id="price" step="0.01"
+          value="<% if(editing || product) {%><%= product.price %><% } %>">
+      </div>
+      <div class="form-control-product">
+        <label for="description">Description</label>
+        <textarea name="description" id="description"
+          rows="5"><% if(editing || product) {%><%= product.description %><% } %></textarea>
+      </div>
       <% if(editing) { %>
       <div class="form-control-product">
         <div class="card__image">
@@ -37,8 +47,6 @@
           </button>
           <span class="file-info">Upload a file</span>
         </div>
-
-
       </div>
       <% } else { %>
       <div class="form-control-product">
@@ -53,16 +61,6 @@
       </div>
 
       <% } %>
-      <div class="form-control-product">
-        <label for="price">Price</label>
-        <input type="number" name="price" id="price" step="0.01"
-          value="<% if(editing || product) {%><%= product.price %><% } %>">
-      </div>
-      <div class="form-control-product">
-        <label for="description">Description</label>
-        <textarea name="description" id="description"
-          rows="5"><% if(editing || product) {%><%= product.description %><% } %></textarea>
-      </div>
 
       <!-- Send product id only when edit. Product id is generated when creating a new one. See Product model for more details -->
       <% if(editing){%>
