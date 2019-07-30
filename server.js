@@ -15,7 +15,6 @@ const bodyParser = require("body-parser");
 const session = require("express-session");
 // const SequelizeStore = require("connect-session-sequelize")(session.Store);
 const csrf = require("csurf");
-const { validationResult } = require("express-validator/check");
 const MongoDBStore = require("connect-mongodb-session")(session);
 const flash = require("connect-flash");
 const multer = require("multer");
@@ -85,8 +84,6 @@ const fileStorage = multer.diskStorage({
 });
 
 const fileFilter = (req, file, cb) => {
-  const validator = validationResult(req);
-  console.log(validator.array());
   if (
     file.mimetype === "image/png" ||
     file.mimetype === "image/jpg" ||

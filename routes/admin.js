@@ -66,6 +66,7 @@ router.post(
         }
       }),
     check("description")
+      .trim()
       .isLength({ min: 5 })
       .withMessage(
         "Your description should have at least 5 character. Please tell us more about your product"

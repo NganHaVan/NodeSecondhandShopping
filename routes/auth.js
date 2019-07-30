@@ -1,12 +1,22 @@
 const express = require("express");
 const router = express.Router();
 const authController = require("../controllers/auth");
-const { check, body } = require("express-validator/check");
+const { check, body } = require("express-validator");
 const User = require("../models/user");
 
 router.get("/login", authController.getLogin);
 
-router.post("/login", authController.postLogin);
+router.post(
+  "/login",
+  check("email")
+    .isEmail()
+    .withMessage("Please enter a valid email!")
+    .normalizeEmail(),
+  body("password", "Password cannot be empty")
+    .trim()
+    .isLength({ min: 5 }),
+  authController.postLogin
+);
 
 router.post("/logout", authController.postLogout);
 
@@ -15,6 +25,9 @@ router.get("/signup", authController.getSignUp);
 router.post(
   "/signup",
   [
+    check("name", "Name cannot be empty and must have at least 5 characters")
+      .trim()
+      .isLength({ min: 5 }),
     check("email")
       .isEmail()
       .withMessage("Please enter a valid email!")
