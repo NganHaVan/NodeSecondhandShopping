@@ -41,7 +41,6 @@ exports.postAddProduct = (req, res, next) => {
 
   const errors = validationResult(req);
   if (image && errors.isEmpty()) {
-    console.log({ isEmpty: errors.isEmpty() });
     const imageUrl = image.path;
     const product = new Product({
       title,
@@ -57,7 +56,6 @@ exports.postAddProduct = (req, res, next) => {
         errorUtils.handle500Error(err, next);
       });
   } else {
-    console.log({ valError: errors.array() });
     return res.status(422).render("admin/edit-product", {
       pageTitle: "Product form",
       path: "/admin/add-product",
