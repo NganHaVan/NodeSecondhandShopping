@@ -8,6 +8,8 @@ const Order = require("../models/order");
 const User = require("../models/user");
 const errorUtils = require("../utils/errors");
 
+const { stripeCharges } = require("../utils/stripe");
+
 const ITEM_PER_PAGE = 3;
 
 exports.getProducts = (req, res, next) => {
@@ -157,28 +159,53 @@ exports.getOrders = (req, res, next) => {
 };
 
 exports.postOrder = (req, res, next) => {
+  console.log({ req: req.body });
   req.user
     .populate("cart.items.productId")
     .execPopulate()
     .then(user => {
-      let products = user.cart.items.map(item => {
-        return {
-          productData: { ...item.productId._doc },
-          quantity: item.quantity
-        };
+      const products = user.cart.items;
+      let total = 0;
+      products.forEach(p => {
+        total += p.productId.price * p.quantity;
       });
+
+      let totalInCents = total * 100;
+
+      const result = stripeCharges(req, totalInCents); //ASYNCHRONOUS FUNCTION created above is used here
+
+      //this works slightly differently to Maximilians code
+      //only if stripe successfully charged the credit card will the orders collection be filled
+      if (result) {
+        console.log("Got token");
+        return user; //we return the user so it can be used in the then block below
+      } else {
+        return;
+      }
+    })
+    .then(user => {
+      const products = user.cart.items.map(i => {
+        return { quantity: i.quantity, product: { ...i.productId._doc } };
+      });
+
       const order = new Order({
         user: {
-          name: req.user.name,
+          email: req.user.email,
           userId: req.user
         },
-        products
+        products: products
       });
-      order.save();
+      return order.save();
     })
-    .then(result => req.user.clearCart())
-    .then(result => res.redirect("/orders"))
-    .catch(err => errorUtils.handle500Error(err, next));
+    .then(result => {
+      return req.user.clearCart();
+    })
+    .then(result => {
+      res.redirect("/orders");
+    })
+    .catch(err => {
+      console.log(err);
+    });
 };
 
 exports.getInvoice = async (req, res, next) => {
@@ -238,7 +265,7 @@ exports.getInvoice = async (req, res, next) => {
     if (!order) {
       throw new Error("No orders found.");
     }
-    if (order.userId !== req.user.id) {
+    if (order.userId !== req.user._id) {
       throw new Error("Unauthorized download");
     }
     const products = await order.find();
@@ -291,8 +318,23 @@ exports.getInvoice = async (req, res, next) => {
 };
 
 exports.getCheckout = (req, res, next) => {
-  res.render("shop/checkout", {
-    path: "/checkout",
-    pageTitle: "Checkout"
-  });
+  req.user
+    .populate("cart.items.productId")
+    .execPopulate()
+    .then(user => {
+      let products = user.cart.items;
+      let total = 0;
+      products.forEach(prod => {
+        total += prod.quantity * prod.productId.price;
+      });
+      res.render("shop/checkout", {
+        path: "/checkout",
+        pageTitle: "Checkout",
+        products: products,
+        csrfToken: res.locals.csrfToken,
+        user: req.user.name,
+        totalSum: total
+      });
+    })
+    .catch(err => errorUtils.handle500Error(err, next));
 };
