@@ -16,13 +16,7 @@ router.get("/products", isAuth, adminController.getProducts);
 router.post(
   "/add-product",
   [
-    check("title")
-      .isAlphanumeric()
-      .withMessage("Invalid title")
-      .trim(),
-    check("price")
-      .isFloat()
-      .withMessage("Invalid price"),
+    check("price").isFloat().withMessage("Invalid price"),
     body("image")
       .isEmpty()
       .custom((value, { req }) => {
@@ -49,13 +43,7 @@ router.get("/edit-product/:productId", isAuth, adminController.getEditProduct);
 router.post(
   "/edit-product",
   [
-    check("title")
-      .isAlphanumeric()
-      .withMessage("Invalid title")
-      .trim(),
-    check("price")
-      .isFloat()
-      .withMessage("Invalid price"),
+    check("price").isFloat().withMessage("Invalid price"),
     check("description")
       .trim()
       .isLength({ min: 5 })

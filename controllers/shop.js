@@ -52,7 +52,7 @@ exports.getProduct = (req, res, next) => {
         // Path in navigation
         path: "/products",
         csrfToken: res.locals.csrfToken,
-        user: req.user.name
+        user: req.user ? req.user.name : ""
       });
     })
     .catch(err => errorUtils.handle500Error(err, next));
@@ -297,9 +297,7 @@ exports.getInvoice = async (req, res, next) => {
     pdfDoc.text("-----------------");
     products.forEach(invoice => {
       pdfDoc.text(
-        `${invoice.title}(${invoice.price}/each): ${
-          invoice.orderItem.quantity
-        } unit(s)`
+        `${invoice.title}(${invoice.price}/each): ${invoice.orderItem.quantity} unit(s)`
       );
     });
     pdfDoc.text("------------------");
