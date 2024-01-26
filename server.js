@@ -194,6 +194,7 @@ mongoose
     });
   })
   .catch(err => {
+    console.log("ERROR IN CONNECTING TO MLAB", mongoURI);
     console.log(err);
     throw err;
   });

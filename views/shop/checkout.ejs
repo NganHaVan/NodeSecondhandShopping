@@ -23,7 +23,7 @@
     </div>
     <div class="wrapper">
       <script src="https://js.stripe.com/v3/"></script>
-      <form action="/create-order" method="post" id="payment-form">
+      <form id="payment-form">
         <div class="form-row">
 
           <label for="card-element">
@@ -38,7 +38,7 @@
         </div>
         <br />
 
-        <button class="btn btn-primary">Submit Payment</button>
+        <button type="submit" class="btn btn-primary">Submit Payment</button>
       </form>
     </div>
   </main>

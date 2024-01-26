@@ -141,6 +141,9 @@ exports.deleteCart = (req, res, next) => {
   const prodId = req.body.productId;
   req.user
     .removeCart(prodId)
+    .then(() => {
+      res.redirect("/cart");
+    })
     .catch(err => errorUtils.handle500Error(err, next));
 };
 
@@ -159,11 +162,11 @@ exports.getOrders = (req, res, next) => {
 };
 
 exports.postOrder = (req, res, next) => {
-  console.log({ req: req.body });
+  console.log("post order");
   req.user
     .populate("cart.items.productId")
     .execPopulate()
-    .then(user => {
+    .then(async user => {
       const products = user.cart.items;
       let total = 0;
       products.forEach(p => {
@@ -172,7 +175,9 @@ exports.postOrder = (req, res, next) => {
 
       let totalInCents = total * 100;
 
-      const result = stripeCharges(req, totalInCents); //ASYNCHRONOUS FUNCTION created above is used here
+      // const result = await stripeCharges(req, totalInCents); //ASYNCHRONOUS FUNCTION created above is used here
+      const result = true;
+      console.log({ result });
 
       //this works slightly differently to Maximilians code
       //only if stripe successfully charged the credit card will the orders collection be filled

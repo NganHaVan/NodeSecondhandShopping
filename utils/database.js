@@ -6,7 +6,7 @@ module.exports = pool.promise(); */
 const mongodb = require("mongodb");
 const MongoClient = mongodb.MongoClient;
 const db = require("../config/database").mongoURI;
-console.log({ db });
+
 const mongoConnect = callback => {
   MongoClient.connect(db, { useNewUrlParser: true })
     .then(result => {
@@ -14,6 +14,7 @@ const mongoConnect = callback => {
       callback(result);
     })
     .catch(err => {
+      console.log("CANNOT CONNECT");
       console.log(err);
       throw err;
     });
