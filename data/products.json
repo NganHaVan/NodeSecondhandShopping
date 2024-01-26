@@ -1,1 +1,9 @@
-[{"id":"12345","title":"Thermometer","imageUrl":"https://images-na.ssl-images-amazon.com/images/I/31XHiry5A1L._SL500_AC_SS350_.jpg","description":"Website thermometer","price":"70"}]
+[
+    {
+        "id": "12345",
+        "title": "Thermometer",
+        "imageUrl": "https://images-na.ssl-images-amazon.com/images/I/31XHiry5A1L._SL500_AC_SS350_.jpg",
+        "description": "Website thermometer",
+        "price": "70"
+    }
+]
